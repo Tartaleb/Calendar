@@ -8,6 +8,12 @@ const SCOPE = "https://www.googleapis.com/auth/calendar";
 const CAL_API = "https://www.googleapis.com/calendar/v3";
 const CALENDAR_ID = "primary";
 
+// ID client OAuth web (public par conception : la sécurité vient des
+// « Origines JavaScript autorisées » dans Google Cloud, pas du secret).
+// Surchargeable via ⚙️ (stocké alors dans localStorage).
+const DEFAULT_CLIENT_ID =
+  "155543654881-mia8eo9t9ahko51ikph3eoqih9sio7ht.apps.googleusercontent.com";
+
 // Palette officielle des couleurs d'événements Google Agenda (colorId 1..11).
 // La clé "0" représente la couleur par défaut de l'agenda.
 const COLORS = {
@@ -29,7 +35,7 @@ const COLOR_IDS = Object.keys(COLORS);
 /* ------------------------------ État ------------------------------ */
 
 const state = {
-  clientId: localStorage.getItem("cal.clientId") || "",
+  clientId: localStorage.getItem("cal.clientId") || DEFAULT_CLIENT_ID,
   accessToken: null,
   tokenExpiry: 0,
   currentDate: new Date(),
