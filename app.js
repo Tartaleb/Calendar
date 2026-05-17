@@ -31,6 +31,7 @@ const COLORS = {
   "11": { name: "Tomate",      hex: "#d50000" },
 };
 const COLOR_IDS = Object.keys(COLORS);
+const COLOR_ORDER = Object.fromEntries(COLOR_IDS.map((id, i) => [id, i]));
 
 /* ------------------------------ État ------------------------------ */
 
@@ -457,7 +458,9 @@ function renderEvents() {
         : "Aucun événement ce jour-là."
     );
   }
-  // Liste continue (les événements arrivent triés par date depuis l'API).
+  // Classé par couleur ; à couleur égale, l'ordre par date est conservé
+  // (tri stable, événements déjà triés par date depuis l'API).
+  visible.sort((a, b) => COLOR_ORDER[colorOf(a)] - COLOR_ORDER[colorOf(b)]);
   els.eventList.innerHTML = "";
   for (const ev of visible) els.eventList.appendChild(eventCard(ev));
 }
