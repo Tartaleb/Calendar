@@ -442,65 +442,22 @@ function emptyState(msg) {
   els.eventList.innerHTML = `<div class="empty-state"><div class="big">🗓️</div>${msg}</div>`;
 }
 
-function eventDayKey(ev) {
-  return ev.start.date || ymd(new Date(ev.start.dateTime));
-}
-
 function renderEvents() {
   const visible = state.events.filter((e) =>
     state.activeColors.has(colorOf(e))
   );
-  const filtered = state.events.length > 0 && visible.length === 0;
-
-  if (state.viewMode === "week") {
-    if (visible.length === 0) {
-      return emptyState(
-        filtered
-          ? "Aucun événement pour les couleurs sélectionnées."
-          : "Aucun événement cette semaine."
-      );
-    }
-    const mon = startOfWeek(state.currentDate);
-    const todayKey = ymd(new Date());
-    const byDay = {};
-    for (const ev of visible) (byDay[eventDayKey(ev)] ||= []).push(ev);
-    els.eventList.innerHTML = "";
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(mon, i);
-      const key = ymd(d);
-      const group = document.createElement("div");
-      group.className = "day-group";
-      const head = document.createElement("div");
-      head.className = "day-head" + (key === todayKey ? " is-today" : "");
-      head.textContent = capitalize(
-        d.toLocaleDateString("fr-FR", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        })
-      );
-      group.appendChild(head);
-      const evs = byDay[key];
-      if (!evs) {
-        const none = document.createElement("div");
-        none.className = "day-empty";
-        none.textContent = "—";
-        group.appendChild(none);
-      } else {
-        for (const ev of evs) group.appendChild(eventCard(ev));
-      }
-      els.eventList.appendChild(group);
-    }
-    return;
-  }
-
   if (visible.length === 0) {
+    const filtered = state.events.length > 0;
+    const week = state.viewMode === "week";
     return emptyState(
       filtered
         ? "Aucun événement pour les couleurs sélectionnées."
+        : week
+        ? "Aucun événement cette semaine."
         : "Aucun événement ce jour-là."
     );
   }
+  // Liste continue (les événements arrivent triés par date depuis l'API).
   els.eventList.innerHTML = "";
   for (const ev of visible) els.eventList.appendChild(eventCard(ev));
 }

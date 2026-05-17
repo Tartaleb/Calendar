@@ -205,33 +205,6 @@ body {
   border-color: var(--primary);
 }
 
-/* Vue semaine : groupes par jour */
-.day-group { margin-top: 18px; }
-.day-group:first-child { margin-top: 4px; }
-.day-head {
-  font-size: .82rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  color: var(--muted);
-  padding: 0 4px 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
-}
-.day-head.is-today {
-  color: var(--primary);
-}
-.day-head.is-today::after {
-  content: " · aujourd'hui";
-  font-weight: 500;
-  text-transform: none;
-}
-.day-empty {
-  color: var(--border);
-  font-size: 1.1rem;
-  padding: 2px 6px 4px;
-  user-select: none;
-}
-
 /* Bouton flottant */
 .fab {
   position: fixed;
