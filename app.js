@@ -39,6 +39,7 @@ const state = {
   accessToken: null,
   tokenExpiry: 0,
   currentDate: new Date(),
+  viewMode: localStorage.getItem("cal.view") === "week" ? "week" : "day",
   events: [],
   // Couleurs actuellement visibles (Set d'ids). Par défaut : toutes.
   activeColors: new Set(
@@ -61,8 +62,11 @@ const els = {
   prevDay: $("prevDay"),
   nextDay: $("nextDay"),
   todayBtn: $("todayBtn"),
+  viewDay: $("viewDay"),
+  viewWeek: $("viewWeek"),
   dateLabel: $("dateLabel"),
   datePicker: $("datePicker"),
+  filters: $("filters"),
   colorFilters: $("colorFilters"),
   eventList: $("eventList"),
   eventModal: $("eventModal"),
@@ -102,14 +106,53 @@ function addDays(d, n) {
   return r;
 }
 
-function frenchDate(d) {
-  const s = d.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function frenchDate(d) {
+  return capitalize(
+    d.toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  );
+}
+
+// Lundi de la semaine contenant d (semaine lundi → dimanche).
+function startOfWeek(d) {
+  const r = new Date(d);
+  r.setHours(0, 0, 0, 0);
+  const day = r.getDay(); // 0 = dimanche … 6 = samedi
+  r.setDate(r.getDate() + (day === 0 ? -6 : 1 - day));
+  return r;
+}
+
+function frenchWeekLabel(a, b) {
+  const sameYear = a.getFullYear() === b.getFullYear();
+  const sameMonth = sameYear && a.getMonth() === b.getMonth();
+  if (sameMonth) {
+    const m = a.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    return `${a.getDate()} – ${b.getDate()} ${m}`;
+  }
+  const fmt = { day: "numeric", month: "long", year: "numeric" };
+  const left = sameYear
+    ? a.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
+    : a.toLocaleDateString("fr-FR", fmt);
+  return `${left} – ${b.toLocaleDateString("fr-FR", fmt)}`;
+}
+
+// Intervalle [start, end[ chargé selon le mode d'affichage.
+function currentRange() {
+  if (state.viewMode === "week") {
+    const start = startOfWeek(state.currentDate);
+    return { start, end: addDays(start, 7) };
+  }
+  const start = new Date(state.currentDate);
+  start.setHours(0, 0, 0, 0);
+  return { start, end: addDays(start, 1) };
 }
 
 let toastTimer = null;
@@ -281,12 +324,10 @@ async function api(path, opts = {}) {
 }
 
 async function loadEvents() {
-  const dayStart = new Date(state.currentDate);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = addDays(dayStart, 1);
+  const { start, end } = currentRange();
   const params = new URLSearchParams({
-    timeMin: dayStart.toISOString(),
-    timeMax: dayEnd.toISOString(),
+    timeMin: start.toISOString(),
+    timeMax: end.toISOString(),
     singleEvents: "true",
     orderBy: "startTime",
     maxResults: "250",
@@ -297,7 +338,7 @@ async function loadEvents() {
       `/calendars/${encodeURIComponent(CALENDAR_ID)}/events?${params}`
     );
     state.events = (data.items || []).filter((e) => e.status !== "cancelled");
-    renderEvents();
+    refreshUI();
   } catch (err) {
     els.eventList.innerHTML = `<p class="empty-state">Erreur de chargement.<br><small>${err.message}</small></p>`;
   }
@@ -335,15 +376,35 @@ async function deleteEvent(id) {
 /* ------------------------------ Rendu ----------------------------- */
 
 function render() {
-  els.dateLabel.textContent = frenchDate(state.currentDate);
+  const week = state.viewMode === "week";
+  els.viewDay.setAttribute("aria-pressed", String(!week));
+  els.viewWeek.setAttribute("aria-pressed", String(week));
+  els.prevDay.setAttribute("aria-label", week ? "Semaine précédente" : "Jour précédent");
+  els.nextDay.setAttribute("aria-label", week ? "Semaine suivante" : "Jour suivant");
+  if (week) {
+    const mon = startOfWeek(state.currentDate);
+    els.dateLabel.textContent = frenchWeekLabel(mon, addDays(mon, 6));
+  } else {
+    els.dateLabel.textContent = frenchDate(state.currentDate);
+  }
   els.datePicker.value = ymd(state.currentDate);
+  refreshUI();
+}
+
+function refreshUI() {
   renderColorFilters();
   renderEvents();
 }
 
+// Filtres : uniquement les couleurs réellement présentes dans
+// l'intervalle chargé (sur les événements bruts, avant filtrage, pour
+// pouvoir réactiver une couleur qu'on vient de masquer).
 function renderColorFilters() {
+  const present = new Set(state.events.map(colorOf));
+  els.filters.style.display = present.size ? "" : "none";
   els.colorFilters.innerHTML = "";
   for (const id of COLOR_IDS) {
+    if (!present.has(id)) continue;
     const c = COLORS[id];
     const chip = document.createElement("button");
     chip.className = "color-chip";
@@ -357,44 +418,91 @@ function renderColorFilters() {
         "cal.activeColors",
         JSON.stringify([...state.activeColors])
       );
-      renderColorFilters();
-      renderEvents();
+      refreshUI();
     };
     els.colorFilters.appendChild(chip);
   }
+}
+
+function eventCard(ev) {
+  const card = document.createElement("div");
+  card.className = "event-card";
+  const bar = document.createElement("div");
+  bar.className = "event-color";
+  bar.style.background = COLORS[colorOf(ev)].hex;
+  const title = document.createElement("div");
+  title.className = "event-title";
+  title.textContent = ev.summary || "(sans titre)";
+  card.append(bar, title);
+  card.onclick = () => openEventModal(ev);
+  return card;
+}
+
+function emptyState(msg) {
+  els.eventList.innerHTML = `<div class="empty-state"><div class="big">🗓️</div>${msg}</div>`;
+}
+
+function eventDayKey(ev) {
+  return ev.start.date || ymd(new Date(ev.start.dateTime));
 }
 
 function renderEvents() {
   const visible = state.events.filter((e) =>
     state.activeColors.has(colorOf(e))
   );
-  if (visible.length === 0) {
-    const total = state.events.length;
-    els.eventList.innerHTML = `<div class="empty-state">
-      <div class="big">🗓️</div>
-      ${
-        total === 0
-          ? "Aucun événement ce jour-là."
-          : "Aucun événement pour les couleurs sélectionnées."
+  const filtered = state.events.length > 0 && visible.length === 0;
+
+  if (state.viewMode === "week") {
+    if (visible.length === 0) {
+      return emptyState(
+        filtered
+          ? "Aucun événement pour les couleurs sélectionnées."
+          : "Aucun événement cette semaine."
+      );
+    }
+    const mon = startOfWeek(state.currentDate);
+    const todayKey = ymd(new Date());
+    const byDay = {};
+    for (const ev of visible) (byDay[eventDayKey(ev)] ||= []).push(ev);
+    els.eventList.innerHTML = "";
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(mon, i);
+      const key = ymd(d);
+      const group = document.createElement("div");
+      group.className = "day-group";
+      const head = document.createElement("div");
+      head.className = "day-head" + (key === todayKey ? " is-today" : "");
+      head.textContent = capitalize(
+        d.toLocaleDateString("fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        })
+      );
+      group.appendChild(head);
+      const evs = byDay[key];
+      if (!evs) {
+        const none = document.createElement("div");
+        none.className = "day-empty";
+        none.textContent = "—";
+        group.appendChild(none);
+      } else {
+        for (const ev of evs) group.appendChild(eventCard(ev));
       }
-    </div>`;
+      els.eventList.appendChild(group);
+    }
     return;
   }
-  els.eventList.innerHTML = "";
-  for (const ev of visible) {
-    const card = document.createElement("div");
-    card.className = "event-card";
-    const color = COLORS[colorOf(ev)].hex;
-    const bar = document.createElement("div");
-    bar.className = "event-color";
-    bar.style.background = color;
-    const title = document.createElement("div");
-    title.className = "event-title";
-    title.textContent = ev.summary || "(sans titre)";
-    card.append(bar, title);
-    card.onclick = () => openEventModal(ev);
-    els.eventList.appendChild(card);
+
+  if (visible.length === 0) {
+    return emptyState(
+      filtered
+        ? "Aucun événement pour les couleurs sélectionnées."
+        : "Aucun événement ce jour-là."
+    );
   }
+  els.eventList.innerHTML = "";
+  for (const ev of visible) els.eventList.appendChild(eventCard(ev));
 }
 
 /* ------------------------- Modale événement ----------------------- */
@@ -520,9 +628,20 @@ function goTo(date) {
   loadEvents();
 }
 
-els.prevDay.onclick = () => goTo(addDays(state.currentDate, -1));
-els.nextDay.onclick = () => goTo(addDays(state.currentDate, 1));
+const navStep = () => (state.viewMode === "week" ? 7 : 1);
+els.prevDay.onclick = () => goTo(addDays(state.currentDate, -navStep()));
+els.nextDay.onclick = () => goTo(addDays(state.currentDate, navStep()));
 els.todayBtn.onclick = () => goTo(new Date());
+
+function setView(mode) {
+  if (state.viewMode === mode) return;
+  state.viewMode = mode;
+  localStorage.setItem("cal.view", mode);
+  render();
+  loadEvents();
+}
+els.viewDay.onclick = () => setView("day");
+els.viewWeek.onclick = () => setView("week");
 els.dateLabel.onclick = () => {
   if (typeof els.datePicker.showPicker === "function") {
     els.datePicker.showPicker();

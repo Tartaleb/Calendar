@@ -25,7 +25,12 @@
       <input type="date" id="datePicker" class="visually-hidden" />
     </nav>
 
-    <section class="filters" aria-label="Filtres par couleur">
+    <div class="viewswitch" role="group" aria-label="Affichage">
+      <button id="viewDay" class="seg" aria-pressed="true">Jour</button>
+      <button id="viewWeek" class="seg" aria-pressed="false">Semaine</button>
+    </div>
+
+    <section id="filters" class="filters" aria-label="Filtres par couleur">
       <span class="filters-label">Filtres&nbsp;:</span>
       <div id="colorFilters" class="color-filters"></div>
     </section>

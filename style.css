@@ -179,6 +179,59 @@ body {
 .welcome .hint, .hint { font-size: .85rem; color: var(--muted); }
 .hint a { color: var(--primary); }
 
+/* Sélecteur Jour / Semaine */
+.viewswitch {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4px 18px 0;
+}
+.seg {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: .9rem;
+  font-weight: 500;
+  padding: 8px 22px;
+  cursor: pointer;
+}
+.seg:first-child { border-radius: 999px 0 0 999px; }
+.seg:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+.seg[aria-pressed="true"] {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+/* Vue semaine : groupes par jour */
+.day-group { margin-top: 18px; }
+.day-group:first-child { margin-top: 4px; }
+.day-head {
+  font-size: .82rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--muted);
+  padding: 0 4px 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+.day-head.is-today {
+  color: var(--primary);
+}
+.day-head.is-today::after {
+  content: " · aujourd'hui";
+  font-weight: 500;
+  text-transform: none;
+}
+.day-empty {
+  color: var(--border);
+  font-size: 1.1rem;
+  padding: 2px 6px 4px;
+  user-select: none;
+}
+
 /* Bouton flottant */
 .fab {
   position: fixed;
