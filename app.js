@@ -77,6 +77,7 @@ const els = {
   evTitle: $("evTitle"),
   evDate: $("evDate"),
   evColors: $("evColors"),
+  colorField: $("colorField"),
   evDelete: $("evDelete"),
   evCancel: $("evCancel"),
   evSave: $("evSave"),
@@ -492,21 +493,31 @@ function buildColorPicker() {
 function openEventModal(ev) {
   state.editingEvent = ev || null;
   if (ev) {
-    els.eventModalTitle.textContent = "Modifier l'événement";
+    // Événement existant : consultation + suppression uniquement.
+    els.eventModalTitle.textContent = "Événement";
     els.evTitle.value = ev.summary || "";
     els.evDate.value = ev.start.date || ymd(new Date(ev.start.dateTime));
-    pickedColor = colorOf(ev);
+    els.evTitle.disabled = true;
+    els.evDate.disabled = true;
+    els.colorField.hidden = true;
+    els.evSave.hidden = true;
     els.evDelete.hidden = false;
+    els.eventModal.hidden = false;
   } else {
+    // Nouvel événement : tous les champs éditables.
     els.eventModalTitle.textContent = "Nouvel événement";
     els.evTitle.value = "";
     els.evDate.value = ymd(state.currentDate);
+    els.evTitle.disabled = false;
+    els.evDate.disabled = false;
     pickedColor = "0";
+    buildColorPicker();
+    els.colorField.hidden = false;
+    els.evSave.hidden = false;
     els.evDelete.hidden = true;
+    els.eventModal.hidden = false;
+    els.evTitle.focus();
   }
-  buildColorPicker();
-  els.eventModal.hidden = false;
-  els.evTitle.focus();
 }
 
 function closeEventModal() {

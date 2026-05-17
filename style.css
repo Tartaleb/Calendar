@@ -302,7 +302,15 @@ button {
 .modal-card h2 { font-size: 1.2rem; margin-bottom: 18px; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field[hidden] { display: none; }
 .field > span { font-size: .85rem; color: var(--muted); }
+.field input:disabled {
+  background: var(--bg);
+  color: var(--text);
+  opacity: 1;
+  cursor: default;
+  -webkit-text-fill-color: var(--text);
+}
 .field input[type="text"],
 .field input[type="date"] {
   border: 1px solid var(--border);
