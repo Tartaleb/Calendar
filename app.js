@@ -4,7 +4,9 @@
  *  Mon Agenda — agenda Google jour par jour, sans heure
  * ------------------------------------------------------------------ */
 
-const SCOPE = "https://www.googleapis.com/auth/calendar";
+// Périmètre minimal : lecture/écriture des ÉVÉNEMENTS uniquement
+// (pas la gestion des agendas, partages ou paramètres du compte).
+const SCOPE = "https://www.googleapis.com/auth/calendar.events";
 const CAL_API = "https://www.googleapis.com/calendar/v3";
 const CALENDAR_ID = "primary";
 
@@ -268,7 +270,7 @@ function showSignedOutUI() {
   els.addBtn.hidden = true;
   els.welcome.hidden = false;
   els.authBtn.disabled = false;
-  els.authBtn.textContent = "Se connecter avec Google";
+  els.authBtn.textContent = "Connexion Google";
   els.authBtn.onclick = signIn;
 }
 
@@ -278,7 +280,7 @@ function onSignedIn() {
   els.app.hidden = false;
   els.addBtn.hidden = false;
   els.authBtn.disabled = false;
-  els.authBtn.textContent = "Se déconnecter";
+  els.authBtn.textContent = "Déconnexion";
   els.authBtn.onclick = signOut;
   render();
   loadEvents();
@@ -341,7 +343,9 @@ async function loadEvents() {
     state.events = (data.items || []).filter((e) => e.status !== "cancelled");
     refreshUI();
   } catch (err) {
-    els.eventList.innerHTML = `<p class="empty-state">Erreur de chargement.<br><small>${err.message}</small></p>`;
+    els.eventList.innerHTML =
+      '<p class="empty-state">Erreur de chargement.<br><small></small></p>';
+    els.eventList.querySelector("small").textContent = err.message;
   }
 }
 

@@ -12,28 +12,30 @@
     <h1>📅 Mon Agenda</h1>
     <div class="topbar-actions">
       <button id="configBtn" class="icon-btn" title="Configuration" aria-label="Configuration">⚙️</button>
-      <button id="authBtn" class="btn btn-primary">Se connecter avec Google</button>
+      <button id="authBtn" class="btn btn-primary">Connexion Google</button>
     </div>
   </header>
 
   <main id="app" hidden>
-    <nav class="datebar">
-      <button id="prevDay" class="icon-btn" aria-label="Jour précédent">◀</button>
-      <button id="dateLabel" class="date-label" aria-label="Choisir une date"></button>
-      <button id="nextDay" class="icon-btn" aria-label="Jour suivant">▶</button>
-      <button id="todayBtn" class="btn btn-ghost">Aujourd'hui</button>
-      <input type="date" id="datePicker" class="visually-hidden" />
-    </nav>
+    <div class="controls">
+      <nav class="datebar">
+        <button id="prevDay" class="icon-btn" aria-label="Jour précédent">◀</button>
+        <button id="dateLabel" class="date-label" aria-label="Choisir une date"></button>
+        <button id="nextDay" class="icon-btn" aria-label="Jour suivant">▶</button>
+        <button id="todayBtn" class="btn btn-ghost">Auj.</button>
+        <input type="date" id="datePicker" class="visually-hidden" />
+      </nav>
 
-    <div class="viewswitch" role="group" aria-label="Affichage">
-      <button id="viewDay" class="seg" aria-pressed="true">Jour</button>
-      <button id="viewWeek" class="seg" aria-pressed="false">Semaine</button>
+      <div class="viewswitch" role="group" aria-label="Affichage">
+        <button id="viewDay" class="seg" aria-pressed="true">Jour</button>
+        <button id="viewWeek" class="seg" aria-pressed="false">Semaine</button>
+      </div>
+
+      <section id="filters" class="filters" aria-label="Filtres par couleur">
+        <span class="filters-label">Filtres&nbsp;:</span>
+        <div id="colorFilters" class="color-filters"></div>
+      </section>
     </div>
-
-    <section id="filters" class="filters" aria-label="Filtres par couleur">
-      <span class="filters-label">Filtres&nbsp;:</span>
-      <div id="colorFilters" class="color-filters"></div>
-    </section>
 
     <section id="eventList" class="event-list" aria-live="polite"></section>
   </main>
