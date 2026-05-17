@@ -134,6 +134,39 @@ function waitForGsi() {
   });
 }
 
+let autoAttempt = false;
+
+// Le modèle « token » de GIS ne fournit pas de refresh token : le jeton
+// vit ~1 h. On le garde en sessionStorage (effacé à la fermeture de
+// l'onglet) pour survivre à un rafraîchissement sans appel réseau, et on
+// retente une connexion silencieuse si besoin.
+function persistToken() {
+  try {
+    sessionStorage.setItem(
+      "cal.tok",
+      JSON.stringify({ t: state.accessToken, e: state.tokenExpiry })
+    );
+  } catch (_) {}
+}
+
+function restoreToken() {
+  try {
+    const j = JSON.parse(sessionStorage.getItem("cal.tok") || "null");
+    if (j && j.t && Date.now() < j.e) {
+      state.accessToken = j.t;
+      state.tokenExpiry = j.e;
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+function setToken(resp) {
+  state.accessToken = resp.access_token;
+  state.tokenExpiry = Date.now() + (Number(resp.expires_in) - 60) * 1000;
+  persistToken();
+}
+
 async function ensureTokenClient() {
   await waitForGsi();
   if (tokenClient) return;
@@ -141,19 +174,17 @@ async function ensureTokenClient() {
     client_id: state.clientId,
     scope: SCOPE,
     callback: (resp) => {
+      const silent = autoAttempt;
+      autoAttempt = false;
       if (resp.error) {
-        toast("Connexion refusée : " + resp.error);
+        if (!silent) toast("Connexion refusée : " + resp.error);
+        showSignedOutUI();
         return;
       }
-      state.accessToken = resp.access_token;
-      state.tokenExpiry = Date.now() + (Number(resp.expires_in) - 60) * 1000;
+      setToken(resp);
       onSignedIn();
     },
   });
-}
-
-function requestToken(interactive) {
-  tokenClient.requestAccessToken({ prompt: interactive ? "consent" : "" });
 }
 
 async function signIn() {
@@ -163,7 +194,18 @@ async function signIn() {
     return;
   }
   await ensureTokenClient();
-  requestToken(true);
+  tokenClient.requestAccessToken({ prompt: "" });
+}
+
+// Reconnexion silencieuse au chargement : aucun clic ni popup si la
+// session Google est active et le consentement déjà accordé.
+async function trySilentSignIn() {
+  if (!state.clientId || localStorage.getItem("cal.auto") !== "1") return;
+  autoAttempt = true;
+  els.authBtn.disabled = true;
+  els.authBtn.textContent = "Reconnexion…";
+  await ensureTokenClient();
+  tokenClient.requestAccessToken({ prompt: "" });
 }
 
 function signOut() {
@@ -172,17 +214,26 @@ function signOut() {
   }
   state.accessToken = null;
   state.tokenExpiry = 0;
+  localStorage.removeItem("cal.auto");
+  try { sessionStorage.removeItem("cal.tok"); } catch (_) {}
+  showSignedOutUI();
+}
+
+function showSignedOutUI() {
   els.app.hidden = true;
   els.addBtn.hidden = true;
   els.welcome.hidden = false;
+  els.authBtn.disabled = false;
   els.authBtn.textContent = "Se connecter avec Google";
   els.authBtn.onclick = signIn;
 }
 
 function onSignedIn() {
+  localStorage.setItem("cal.auto", "1");
   els.welcome.hidden = true;
   els.app.hidden = false;
   els.addBtn.hidden = false;
+  els.authBtn.disabled = false;
   els.authBtn.textContent = "Se déconnecter";
   els.authBtn.onclick = signOut;
   render();
@@ -198,8 +249,7 @@ async function freshToken() {
     tokenClient.callback = (resp) => {
       tokenClient.callback = prev;
       if (resp.error) return reject(new Error(resp.error));
-      state.accessToken = resp.access_token;
-      state.tokenExpiry = Date.now() + (Number(resp.expires_in) - 60) * 1000;
+      setToken(resp);
       resolve();
     };
     tokenClient.requestAccessToken({ prompt: "" });
@@ -496,5 +546,6 @@ document.addEventListener("keydown", (e) => {
 
 els.authBtn.onclick = signIn;
 render();
-els.app.hidden = true;
-els.welcome.hidden = false;
+showSignedOutUI();
+if (restoreToken()) onSignedIn();
+else trySilentSignIn();
