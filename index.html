@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a73e8" />
+  <title>Mon Agenda</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>📅 Mon Agenda</h1>
+    <div class="topbar-actions">
+      <button id="configBtn" class="icon-btn" title="Configuration" aria-label="Configuration">⚙️</button>
+      <button id="authBtn" class="btn btn-primary">Se connecter avec Google</button>
+    </div>
+  </header>
+
+  <main id="app" hidden>
+    <nav class="datebar">
+      <button id="prevDay" class="icon-btn" aria-label="Jour précédent">◀</button>
+      <button id="dateLabel" class="date-label" aria-label="Choisir une date"></button>
+      <button id="nextDay" class="icon-btn" aria-label="Jour suivant">▶</button>
+      <button id="todayBtn" class="btn btn-ghost">Aujourd'hui</button>
+      <input type="date" id="datePicker" class="visually-hidden" />
+    </nav>
+
+    <section class="filters" aria-label="Filtres par couleur">
+      <span class="filters-label">Filtres&nbsp;:</span>
+      <div id="colorFilters" class="color-filters"></div>
+    </section>
+
+    <section id="eventList" class="event-list" aria-live="polite"></section>
+  </main>
+
+  <section id="welcome" class="welcome">
+    <p>Connecte-toi avec ton compte Google pour consulter et éditer ton agenda, jour par jour.</p>
+    <p class="hint">Aucune heure n'est affichée : les événements sont gérés à la journée.</p>
+  </section>
+
+  <button id="addBtn" class="fab" hidden aria-label="Ajouter un événement">＋</button>
+
+  <!-- Modale événement -->
+  <div id="eventModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2 id="eventModalTitle">Nouvel événement</h2>
+      <label class="field">
+        <span>Titre</span>
+        <input type="text" id="evTitle" placeholder="Ex : Rendez-vous dentiste" autocomplete="off" />
+      </label>
+      <label class="field">
+        <span>Date</span>
+        <input type="date" id="evDate" />
+      </label>
+      <div class="field">
+        <span>Couleur</span>
+        <div id="evColors" class="color-picker"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="evDelete" class="btn btn-danger" hidden>Supprimer</button>
+        <span class="spacer"></span>
+        <button id="evCancel" class="btn btn-ghost">Annuler</button>
+        <button id="evSave" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale configuration -->
+  <div id="configModal" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Configuration</h2>
+      <p class="hint">
+        Colle ici l'<strong>ID client OAuth</strong> de ton projet Google Cloud.
+        Voir le <a href="https://github.com/Tartaleb/Calendar#configuration-google-cloud" target="_blank" rel="noopener">guide d'installation</a>.
+      </p>
+      <label class="field">
+        <span>Client ID OAuth Google</span>
+        <input type="text" id="cfgClientId" placeholder="xxxxxxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false" />
+      </label>
+      <div class="modal-actions">
+        <span class="spacer"></span>
+        <button id="cfgCancel" class="btn btn-ghost">Annuler</button>
+        <button id="cfgSave" class="btn btn-primary">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
