@@ -385,9 +385,11 @@ async function deleteEvent(id) {
 
 /* ------------------------------ Météo ---------------------------- */
 
-// Météo Rosny-sous-Bois (coordonnées fixes), via Open-Meteo (sans clé API).
-const WX_LAT = 48.8716;
-const WX_LON = 2.4825;
+// Coordonnées du 11 rue du 4e Zouave, 93110 Rosny-sous-Bois
+// (géocodage officiel Base Adresse Nationale).
+// Météo et qualité de l'air via Open-Meteo (sans clé API).
+const WX_LAT = 48.873626;
+const WX_LON = 2.481755;
 
 // Codes WMO -> icône emoji.
 const WX_ICONS = {
