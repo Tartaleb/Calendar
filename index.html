@@ -18,6 +18,12 @@
   </header>
 
   <main id="app" hidden>
+    <div id="weather" class="weather" hidden aria-label="Météo du jour">
+      <span id="wxIcon" class="wx-icon" aria-hidden="true">·</span>
+      <span id="wxTemps" class="wx-temps">—</span>
+      <span id="wxAir" class="wx-air" hidden></span>
+    </div>
+
     <div class="controls">
       <nav class="datebar">
         <button id="prevDay" class="icon-btn" aria-label="Jour précédent">◀</button>
@@ -30,12 +36,6 @@
       <div class="viewswitch" role="group" aria-label="Affichage">
         <button id="viewDay" class="seg" aria-pressed="true">Jour</button>
         <button id="viewWeek" class="seg" aria-pressed="false">Semaine</button>
-      </div>
-
-      <div id="weather" class="weather" hidden aria-label="Météo du jour">
-        <span id="wxIcon" class="wx-icon" aria-hidden="true">·</span>
-        <span id="wxTemps" class="wx-temps">—</span>
-        <span id="wxAir" class="wx-air" hidden></span>
       </div>
 
       <section id="filters" class="filters" aria-label="Filtres par couleur">
