@@ -75,6 +75,7 @@ const els = {
   wxIcon: $("wxIcon"),
   wxTemps: $("wxTemps"),
   wxAir: $("wxAir"),
+  controls: document.querySelector(".controls"),
   eventList: $("eventList"),
   eventModal: $("eventModal"),
   eventModalTitle: $("eventModalTitle"),
@@ -757,6 +758,15 @@ document.addEventListener("keydown", (e) => {
     else if (!els.configModal.hidden) closeConfig();
   }
 });
+
+// Replie la météo dès que la page commence à défiler.
+window.addEventListener(
+  "scroll",
+  () => {
+    els.controls.classList.toggle("is-scrolled", window.scrollY > 6);
+  },
+  { passive: true }
+);
 
 /* ----------------------------- Démarrage -------------------------- */
 
