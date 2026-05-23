@@ -108,24 +108,31 @@ button {
 .icon-btn:active { background: rgba(60,64,67,.14); transform: scale(.94); }
 @media (hover: hover) { .icon-btn:hover { background: rgba(60,64,67,.08); } }
 
-/* Barre de contrôle fixée en haut pendant le défilement */
-.controls {
-  position: sticky;
-  top: 0;
-  z-index: 9;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 6px rgba(60,64,67,.06);
-}
+/* Sticky en deux étages : la barre de date reste tout en haut, la météo
+   scrolle entre les deux, et Jour/Semaine + filtres se collent juste sous. */
+:root { --datebar-h: 50px; }
 
-/* Barre de date */
 .datebar {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 12px;
+  padding: 3px 12px;
+  min-height: var(--datebar-h);
   max-width: var(--maxw);
   margin: 0 auto;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.controls {
+  position: sticky;
+  top: var(--datebar-h);
+  z-index: 9;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 6px rgba(60,64,67,.06);
 }
 .date-label {
   flex: 1;
