@@ -71,6 +71,10 @@ const els = {
   datePicker: $("datePicker"),
   filters: $("filters"),
   colorFilters: $("colorFilters"),
+  weather: $("weather"),
+  wxIcon: $("wxIcon"),
+  wxTemps: $("wxTemps"),
+  wxAir: $("wxAir"),
   eventList: $("eventList"),
   eventModal: $("eventModal"),
   eventModalTitle: $("eventModalTitle"),
@@ -379,6 +383,121 @@ async function deleteEvent(id) {
   );
 }
 
+/* ------------------------------ Météo ---------------------------- */
+
+// Météo Rosny-sous-Bois (coordonnées fixes), via Open-Meteo (sans clé API).
+const WX_LAT = 48.8716;
+const WX_LON = 2.4825;
+
+// Codes WMO -> icône emoji.
+const WX_ICONS = {
+  0: "☀️",
+  1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌦️",
+  56: "🌧️", 57: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️",
+  66: "🌧️", 67: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "🌨️", 77: "🌨️",
+  80: "🌦️", 81: "🌦️", 82: "🌧️",
+  85: "🌨️", 86: "🌨️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
+};
+
+function aqiLabel(v) {
+  if (v == null || Number.isNaN(v)) return null;
+  if (v < 20) return { label: "Bon", cls: "good" };
+  if (v < 40) return { label: "Correct", cls: "fair" };
+  if (v < 60) return { label: "Moyen", cls: "moderate" };
+  if (v < 80) return { label: "Mauvais", cls: "poor" };
+  return { label: "Très mauvais", cls: "bad" };
+}
+
+const wxCache = {}; // clé: "YYYY-MM-DD"
+
+async function fetchWeather(date) {
+  if (wxCache[date]) return wxCache[date];
+  const today = ymd(new Date());
+  const u = new URL("https://api.open-meteo.com/v1/forecast");
+  u.search = new URLSearchParams({
+    latitude: WX_LAT,
+    longitude: WX_LON,
+    daily: "temperature_2m_max,temperature_2m_min,weather_code",
+    timezone: "auto",
+    start_date: date,
+    end_date: date,
+  }).toString();
+  const res = await fetch(u);
+  if (!res.ok) throw new Error("wx-http");
+  const data = await res.json();
+  const d = data.daily || {};
+  if (!d.time || !d.time.length) throw new Error("wx-empty");
+  const out = {
+    code: d.weather_code[0],
+    tmax: Math.round(d.temperature_2m_max[0]),
+    tmin: Math.round(d.temperature_2m_min[0]),
+  };
+  if (date === today) {
+    try {
+      const au = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
+      au.search = new URLSearchParams({
+        latitude: WX_LAT,
+        longitude: WX_LON,
+        current: "european_aqi",
+        timezone: "auto",
+      }).toString();
+      const ar = await fetch(au);
+      if (ar.ok) {
+        const aj = await ar.json();
+        const v = aj.current && aj.current.european_aqi;
+        if (typeof v === "number") out.aqi = v;
+      }
+    } catch (_) {}
+  }
+  wxCache[date] = out;
+  return out;
+}
+
+let wxRequest = 0;
+async function refreshWeather() {
+  if (state.viewMode !== "day") {
+    els.weather.hidden = true;
+    return;
+  }
+  const date = ymd(state.currentDate);
+  // Plage couverte par l'API Open-Meteo : on cache si trop loin.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((state.currentDate - today) / 86400000);
+  if (diffDays < -90 || diffDays > 14) {
+    els.weather.hidden = true;
+    return;
+  }
+  const reqId = ++wxRequest;
+  els.weather.hidden = false;
+  els.wxIcon.textContent = "·";
+  els.wxTemps.textContent = "…";
+  els.wxAir.hidden = true;
+  try {
+    const w = await fetchWeather(date);
+    // Une navigation a pu intervenir entre-temps.
+    if (reqId !== wxRequest) return;
+    els.wxIcon.textContent = WX_ICONS[w.code] || "🌡️";
+    els.wxTemps.textContent = `${w.tmax}° / ${w.tmin}°`;
+    const a = aqiLabel(w.aqi);
+    if (a) {
+      els.wxAir.textContent = `Air : ${a.label}`;
+      els.wxAir.className = "wx-air " + a.cls;
+      els.wxAir.hidden = false;
+    } else {
+      els.wxAir.hidden = true;
+    }
+  } catch (_) {
+    if (reqId !== wxRequest) return;
+    els.weather.hidden = true;
+  }
+}
+
 /* ------------------------------ Rendu ----------------------------- */
 
 function render() {
@@ -395,6 +514,7 @@ function render() {
   }
   els.datePicker.value = ymd(state.currentDate);
   refreshUI();
+  refreshWeather();
 }
 
 function refreshUI() {
