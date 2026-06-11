@@ -768,6 +768,41 @@ window.addEventListener(
   { passive: true }
 );
 
+// Navigation au swipe (tactile) : ← = suivant, → = précédent.
+// Le mode (jour / semaine) détermine si on saute d'1 jour ou 7.
+let swipeStart = null;
+els.app.addEventListener(
+  "touchstart",
+  (e) => {
+    if (!els.eventModal.hidden || !els.configModal.hidden) return;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    swipeStart = { x: t.clientX, y: t.clientY, t: performance.now() };
+  },
+  { passive: true }
+);
+els.app.addEventListener(
+  "touchend",
+  (e) => {
+    if (!swipeStart) return;
+    const s = swipeStart;
+    swipeStart = null;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (performance.now() - s.t > 700) return; // trop lent
+    if (Math.abs(dx) < 60) return;              // pas assez de course
+    if (Math.abs(dy) > Math.abs(dx) * 0.6) return; // trop vertical
+    goTo(addDays(state.currentDate, dx < 0 ? navStep() : -navStep()));
+  },
+  { passive: true }
+);
+els.app.addEventListener(
+  "touchcancel",
+  () => { swipeStart = null; },
+  { passive: true }
+);
+
 /* ----------------------------- Démarrage -------------------------- */
 
 els.authBtn.onclick = signIn;
